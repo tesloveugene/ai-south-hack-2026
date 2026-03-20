@@ -5,33 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CAITO AI Assistant — BigTechGroup</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #0a0a0f;
-    --bg-panel: #12121a;
-    --bg-card: #1a1a26;
-    --bg-input: #1e1e2e;
-    --border: #2a2a3a;
-    --border-focus: #6366f1;
-    --text: #e4e4ed;
-    --text-muted: #8888a0;
-    --text-dim: #5a5a72;
-    --accent: #6366f1;
-    --accent-soft: rgba(99, 102, 241, 0.12);
-    --green: #22c55e;
-    --green-soft: rgba(34, 197, 94, 0.12);
-    --amber: #f59e0b;
-    --amber-soft: rgba(245, 158, 11, 0.12);
-    --red: #ef4444;
-    --red-soft: rgba(239, 68, 68, 0.12);
-    --blue: #3b82f6;
-    --blue-soft: rgba(59, 130, 246, 0.12);
-    --user-bg: #6366f1;
-    --user-text: #ffffff;
-    --assistant-bg: #1a1a26;
+    --bg: #f5f3ff;
+    --bg-white: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f8f7fc;
+    --border: #e5e1f5;
+    --border-focus: #6c3ce0;
+    --text: #1a1a2e;
+    --text-secondary: #555570;
+    --text-muted: #8b8ba0;
+    --accent: #6c3ce0;
+    --accent-hover: #5a2dc5;
+    --accent-soft: rgba(108, 60, 224, 0.08);
+    --gradient: linear-gradient(135deg, #4c2889, #6c3ce0, #8b5cf6);
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fef3c7;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --red-border: #fecaca;
+    --blue: #2563eb;
+    --blue-bg: #dbeafe;
+    --blue-border: #bfdbfe;
+    --purple-bg: rgba(108, 60, 224, 0.06);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
     --radius: 12px;
     --radius-sm: 8px;
     --radius-xs: 6px;
@@ -43,182 +50,231 @@
     color: var(--text);
     height: 100vh;
     display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* === HEADER === */
+  .header {
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
+  }
+
+  .header-logo {
+    font-size: 16px;
+    font-weight: 800;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+
+  .header-nav {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .header-nav a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .header-nav a:hover, .header-nav a.active {
+    color: var(--accent);
+  }
+
+  .model-pill {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--purple-bg);
+    color: var(--accent);
+    font-weight: 600;
+    border: 1px solid var(--border);
+  }
+
+  /* === LAYOUT === */
+  .layout {
+    flex: 1;
+    display: flex;
     overflow: hidden;
   }
 
   /* === SIDEBAR === */
   .sidebar {
-    width: 280px;
-    background: var(--bg-panel);
+    width: 300px;
+    background: var(--bg-white);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    overflow-y: auto;
   }
 
-  .sidebar-header {
-    padding: 20px;
+  .sidebar-section {
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border);
   }
 
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
+  .sidebar-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
   }
 
-  .logo-icon {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  /* Scenario badge */
+  .scenario-card {
+    padding: 12px 16px;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 700;
-    color: white;
+    gap: 10px;
   }
 
-  .logo-text {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+  .scenario-card.scenario-B {
+    background: var(--blue-bg);
+    border: 1px solid var(--blue-border);
+  }
+  .scenario-card.scenario-A {
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+  }
+  .scenario-card.scenario-C {
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+  }
+  .scenario-card.scenario-STOP {
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
   }
 
-  .logo-sub {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-left: 42px;
+  .scenario-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  /* State panel */
-  .state-panel {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+  .scenario-B .scenario-dot { background: var(--blue); }
+  .scenario-A .scenario-dot { background: var(--green); }
+  .scenario-C .scenario-dot { background: var(--amber); }
+  .scenario-STOP .scenario-dot { background: var(--red); }
 
-  .state-section-title {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
-  }
-
-  .scenario-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: var(--radius-xs);
+  .scenario-label {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--text);
   }
 
-  .scenario-badge.scenario-B {
-    background: var(--blue-soft);
-    color: var(--blue);
-  }
-  .scenario-badge.scenario-A {
-    background: var(--green-soft);
-    color: var(--green);
-  }
-  .scenario-badge.scenario-C {
-    background: var(--amber-soft);
-    color: var(--amber);
-  }
-  .scenario-badge.scenario-STOP {
-    background: var(--red-soft);
-    color: var(--red);
-  }
-
-  .state-grid {
+  /* Stats grid */
+  .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
-  .state-item {
-    background: var(--bg-card);
+  .stat-card {
+    background: var(--bg);
     border-radius: var(--radius-xs);
-    padding: 8px 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
   }
 
-  .state-item-label {
+  .stat-label {
     font-size: 10px;
-    color: var(--text-dim);
-    margin-bottom: 2px;
+    color: var(--text-muted);
+    font-weight: 500;
   }
 
-  .state-item-value {
-    font-size: 13px;
-    font-weight: 600;
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 2px;
   }
 
   /* Pipeline */
-  .pipeline {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
   .pipeline-flow {
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-top: 8px;
     flex-wrap: wrap;
   }
 
   .pipeline-step {
     font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: var(--bg-card);
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--bg);
     color: var(--text-muted);
-    white-space: nowrap;
+    border: 1px solid var(--border);
     transition: all 0.3s;
   }
 
   .pipeline-step.active {
-    background: var(--accent-soft);
-    color: var(--accent);
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
   }
 
   .pipeline-arrow {
     font-size: 10px;
-    color: var(--text-dim);
+    color: var(--text-muted);
   }
 
-  /* Facts */
-  .facts-panel {
-    padding: 16px 20px;
-    flex: 1;
-    overflow-y: auto;
-  }
-
+  /* Facts & history */
   .fact-item {
     font-size: 12px;
-    color: var(--text-muted);
-    padding: 4px 0;
+    color: var(--text-secondary);
+    padding: 5px 0;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
   }
 
   .fact-item:last-child { border-bottom: none; }
 
-  .fact-key {
-    color: var(--text-dim);
-    font-size: 10px;
+  .fact-key { color: var(--text-muted); font-size: 11px; }
+  .fact-value { color: var(--text); font-weight: 600; font-size: 12px; }
+
+  .pos-item {
+    font-size: 11px;
+    padding: 4px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--text-secondary);
   }
 
-  .fact-value {
-    color: var(--text);
-    font-weight: 500;
+  .pos-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
   }
+
+  .pos-dot.B { background: var(--blue); }
+  .pos-dot.A { background: var(--green); }
+  .pos-dot.C { background: var(--amber); }
+  .pos-dot.STOP { background: var(--red); }
 
   /* Sidebar footer */
   .sidebar-footer {
@@ -226,25 +282,27 @@
     border-top: 1px solid var(--border);
     display: flex;
     gap: 8px;
+    margin-top: auto;
   }
 
-  .sidebar-btn {
+  .btn-outline {
     flex: 1;
     padding: 8px;
     border: 1px solid var(--border);
     border-radius: var(--radius-xs);
-    background: transparent;
-    color: var(--text-muted);
+    background: var(--bg-white);
+    color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 500;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.2s;
   }
 
-  .sidebar-btn:hover {
-    background: var(--bg-card);
-    color: var(--text);
-    border-color: var(--border-focus);
+  .btn-outline:hover {
+    background: var(--purple-bg);
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   /* === MAIN CHAT === */
@@ -255,38 +313,11 @@
     min-width: 0;
   }
 
-  .chat-header {
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .chat-title {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .chat-subtitle {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .model-badge {
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 20px;
-    background: var(--bg-card);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-  }
-
   /* Messages */
   .messages {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
+    padding: 24px 32px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -295,12 +326,12 @@
   .message {
     display: flex;
     gap: 12px;
-    max-width: 80%;
+    max-width: 75%;
     animation: fadeIn 0.3s ease;
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
@@ -310,27 +341,26 @@
   }
 
   .message-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     flex-shrink: 0;
-    margin-top: 2px;
   }
 
   .message.assistant .message-avatar {
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    background: var(--gradient);
     color: white;
   }
 
   .message.user .message-avatar {
-    background: var(--bg-card);
+    background: var(--bg);
     color: var(--text-muted);
-    font-size: 13px;
+    border: 1px solid var(--border);
   }
 
   .message-body {
@@ -341,84 +371,76 @@
 
   .message-meta {
     font-size: 10px;
-    color: var(--text-dim);
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .message.user .message-meta {
-    justify-content: flex-end;
-  }
+  .message.user .message-meta { justify-content: flex-end; }
 
   .cls-tag {
     font-size: 9px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
-  .cls-tag.pressure {
-    background: var(--red-soft);
-    color: var(--red);
-  }
-  .cls-tag.new_fact {
-    background: var(--green-soft);
-    color: var(--green);
-  }
-  .cls-tag.question {
-    background: var(--blue-soft);
-    color: var(--blue);
-  }
+  .cls-tag.pressure { background: var(--red-bg); color: var(--red); }
+  .cls-tag.new_fact { background: var(--green-bg); color: var(--green); }
+  .cls-tag.question { background: var(--blue-bg); color: var(--blue); }
 
   .message-bubble {
     padding: 12px 16px;
     border-radius: var(--radius);
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
+    box-shadow: var(--shadow-sm);
   }
 
   .message.assistant .message-bubble {
-    background: var(--assistant-bg);
+    background: var(--bg-white);
     border: 1px solid var(--border);
     color: var(--text);
   }
 
   .message.user .message-bubble {
-    background: var(--user-bg);
-    color: var(--user-text);
+    background: var(--gradient);
+    color: white;
+    border: none;
   }
 
-  .message-bubble strong { font-weight: 600; }
-
-  /* Typing indicator */
+  /* Typing */
   .typing-indicator {
     display: none;
     align-self: flex-start;
     gap: 12px;
-    max-width: 80%;
+    max-width: 75%;
   }
 
   .typing-indicator.visible { display: flex; }
 
   .typing-dots {
     padding: 14px 18px;
-    background: var(--assistant-bg);
+    background: var(--bg-white);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     display: flex;
     gap: 5px;
     align-items: center;
+    box-shadow: var(--shadow-sm);
   }
 
   .typing-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--text-muted);
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
     border-radius: 50%;
+    opacity: 0.4;
     animation: typing 1.4s infinite ease-in-out;
   }
 
@@ -426,7 +448,7 @@
   .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
   @keyframes typing {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
     30% { transform: translateY(-6px); opacity: 1; }
   }
 
@@ -437,34 +459,37 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 20px;
     padding: 40px;
     text-align: center;
   }
 
-  .welcome-icon {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  .welcome-banner {
+    background: var(--gradient);
     border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    font-weight: 700;
+    padding: 32px 48px;
     color: white;
+    max-width: 560px;
+    box-shadow: var(--shadow-lg);
   }
 
-  .welcome h2 {
-    font-size: 20px;
-    font-weight: 700;
+  .welcome-banner h2 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
   }
 
-  .welcome p {
+  .welcome-banner p {
     font-size: 13px;
-    color: var(--text-muted);
-    max-width: 440px;
+    opacity: 0.9;
     line-height: 1.6;
+  }
+
+  .welcome-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 460px;
+    line-height: 1.5;
   }
 
   .quick-prompts {
@@ -472,30 +497,102 @@
     flex-wrap: wrap;
     gap: 8px;
     justify-content: center;
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   .quick-prompt {
-    padding: 8px 14px;
+    padding: 8px 16px;
     border: 1px solid var(--border);
     border-radius: 20px;
-    background: transparent;
-    color: var(--text-muted);
+    background: var(--bg-white);
+    color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 500;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
   }
 
   .quick-prompt:hover {
-    background: var(--accent-soft);
-    color: var(--accent);
+    background: var(--accent);
+    color: white;
     border-color: var(--accent);
+    box-shadow: var(--shadow);
+  }
+
+  /* Calculator card */
+  .calc-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    animation: fadeIn 0.3s ease;
+    max-width: 75%;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--accent);
+  }
+
+  .calc-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .calc-metric {
+    background: var(--bg);
+    border-radius: var(--radius-xs);
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .calc-metric-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .calc-metric-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 2px;
+  }
+
+  .calc-metric-value.negative { color: var(--red); }
+  .calc-metric-value.positive { color: var(--green); }
+  .calc-metric-value.warning { color: var(--amber); }
+
+  /* Stress test label */
+  .stress-progress {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-align: center;
+    padding: 8px;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
 
   /* Input */
   .input-area {
-    padding: 16px 24px 20px;
+    padding: 16px 32px 20px;
+    background: var(--bg-white);
     border-top: 1px solid var(--border);
   }
 
@@ -519,15 +616,14 @@
     max-height: 160px;
     line-height: 1.5;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
 
-  .input-field::placeholder {
-    color: var(--text-dim);
-  }
+  .input-field::placeholder { color: var(--text-muted); }
 
   .input-field:focus {
-    border-color: var(--border-focus);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108, 60, 224, 0.1);
   }
 
   .send-btn {
@@ -535,29 +631,26 @@
     height: 46px;
     border: none;
     border-radius: var(--radius);
-    background: var(--accent);
+    background: var(--gradient);
     color: white;
-    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
     flex-shrink: 0;
+    box-shadow: var(--shadow);
   }
 
-  .send-btn:hover { background: #5457e5; }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-  .send-btn svg {
-    width: 20px;
-    height: 20px;
-  }
+  .send-btn svg { width: 20px; height: 20px; }
 
   .input-hint {
     font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 6px;
+    color: var(--text-muted);
+    margin-top: 8px;
     text-align: center;
   }
 
@@ -565,144 +658,67 @@
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-  /* Calculator card */
-  .calc-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 16px;
-    font-size: 12px;
-    line-height: 1.6;
-    animation: fadeIn 0.3s ease;
-    max-width: 80%;
-  }
-
-  .calc-card-title {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--accent);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .calc-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-  }
-
-  .calc-metric {
-    background: var(--bg);
-    border-radius: var(--radius-xs);
-    padding: 6px 8px;
-  }
-
-  .calc-metric-label {
-    font-size: 10px;
-    color: var(--text-dim);
-  }
-
-  .calc-metric-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .calc-metric-value.negative { color: var(--red); }
-  .calc-metric-value.positive { color: var(--green); }
-  .calc-metric-value.warning { color: var(--amber); }
-
-  /* Position history */
-  .pos-item {
-    font-size: 11px;
-    padding: 3px 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .pos-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .pos-dot.B { background: var(--blue); }
-  .pos-dot.A { background: var(--green); }
-  .pos-dot.C { background: var(--amber); }
-  .pos-dot.STOP { background: var(--red); }
-
-  /* Stress test */
-  .stress-progress {
-    font-size: 10px;
-    color: var(--accent);
-    text-align: center;
-    padding: 4px;
-    animation: pulse 1s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
   /* Responsive */
   @media (max-width: 768px) {
     .sidebar { display: none; }
-    .message { max-width: 95%; }
-    .calc-card { max-width: 95%; }
+    .message, .calc-card { max-width: 95%; }
+    .messages { padding: 16px; }
+    .input-area { padding: 12px 16px 16px; }
+    .header { padding: 0 16px; }
   }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
+<header class="header">
+  <span class="header-logo">AI South Hack 2026</span>
+  <div class="header-nav">
+    <a href="#" class="active">Chat</a>
+    <a href="https://dashboard.south.aitalenthub.ru/case" target="_blank">Case</a>
+    <a href="https://dashboard.south.aitalenthub.ru" target="_blank">Leaderboard</a>
+    <span class="model-pill" id="modelBadge">Llama 3.3 70B</span>
+  </div>
+</header>
+
+<div class="layout">
+
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo">
-      <div class="logo-icon">АК</div>
-      <div class="logo-text">CAITO Assistant</div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Текущая позиция</div>
+    <div class="scenario-card scenario-B" id="scenarioBadge">
+      <div class="scenario-dot"></div>
+      <div class="scenario-label" id="scenarioText">Сценарий B — Отложить</div>
     </div>
-    <div class="logo-sub">BigTechGroup · AI South Hack 2026</div>
   </div>
 
-  <div class="state-panel">
-    <div class="state-section-title">Текущая позиция</div>
-    <div>
-      <span class="scenario-badge scenario-B" id="scenarioBadge">
-        <span id="scenarioIcon">◆</span>
-        <span id="scenarioText">Сценарий B — Отложить</span>
-      </span>
-    </div>
-    <div class="state-grid">
-      <div class="state-item">
-        <div class="state-item-label">Уверенность</div>
-        <div class="state-item-value" id="confidenceValue">85%</div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Метрики сессии</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Уверенность</div>
+        <div class="stat-value" id="confidenceValue">85%</div>
       </div>
-      <div class="state-item">
-        <div class="state-item-label">Давление</div>
-        <div class="state-item-value" id="pressureValue">0</div>
+      <div class="stat-card">
+        <div class="stat-label">Давление</div>
+        <div class="stat-value" id="pressureValue">0</div>
       </div>
-      <div class="state-item">
-        <div class="state-item-label">Сообщений</div>
-        <div class="state-item-value" id="messagesValue">0</div>
+      <div class="stat-card">
+        <div class="stat-label">Сообщений</div>
+        <div class="stat-value" id="messagesValue">0</div>
       </div>
-      <div class="state-item">
-        <div class="state-item-label">Фактов</div>
-        <div class="state-item-value" id="factsValue">0</div>
+      <div class="stat-card">
+        <div class="stat-label">Фактов</div>
+        <div class="stat-value" id="factsValue">0</div>
       </div>
     </div>
   </div>
 
-  <div class="pipeline">
-    <div class="state-section-title">Pipeline</div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Pipeline</div>
     <div class="pipeline-flow">
       <span class="pipeline-step" id="pipeClassify">Classify</span>
       <span class="pipeline-arrow">→</span>
@@ -716,48 +732,39 @@
     </div>
   </div>
 
-  <!-- Position history -->
-  <div class="facts-panel" style="border-bottom: 1px solid var(--border); flex: none; max-height: 140px;">
-    <div class="state-section-title">История позиций</div>
+  <div class="sidebar-section" style="max-height: 140px; overflow-y: auto;">
+    <div class="sidebar-title">История позиций</div>
     <div id="positionHistory">
-      <div class="fact-item" style="color: var(--text-dim);">B — Начальная позиция</div>
+      <div class="pos-item"><span class="pos-dot B"></span>B — Начальная позиция</div>
     </div>
   </div>
 
-  <div class="facts-panel">
-    <div class="state-section-title">Известные факты</div>
+  <div class="sidebar-section" style="flex: 1; overflow-y: auto;">
+    <div class="sidebar-title">Известные факты</div>
     <div id="factsList">
-      <div class="fact-item" style="color: var(--text-dim); font-style: italic;">Пока нет новых фактов</div>
+      <div class="fact-item" style="color: var(--text-muted); font-style: italic; border: none;">Пока нет новых фактов</div>
     </div>
   </div>
 
   <div class="sidebar-footer">
-    <button class="sidebar-btn" onclick="resetSession()">Новая сессия</button>
-    <button class="sidebar-btn" onclick="runStressTest()" id="stressBtn">Стресс-тест</button>
-    <button class="sidebar-btn" onclick="exportChat()">Экспорт</button>
+    <button class="btn-outline" onclick="resetSession()">Новая сессия</button>
+    <button class="btn-outline" onclick="runStressTest()" id="stressBtn">Стресс-тест</button>
+    <button class="btn-outline" onclick="exportChat()">Экспорт</button>
   </div>
 </aside>
 
 <!-- MAIN -->
 <main class="main">
-  <div class="chat-header">
-    <div>
-      <div class="chat-title">Антон Кириллов, CAITO</div>
-      <div class="chat-subtitle">Chief AI & Technology Officer · BigTechGroup</div>
-    </div>
-    <span class="model-badge" id="modelBadge">llama-3.3-70b</span>
-  </div>
-
   <div class="messages" id="messagesContainer">
-    <!-- Welcome screen -->
     <div class="welcome" id="welcomeScreen">
-      <div class="welcome-icon">АК</div>
-      <h2>Антон Кириллов, CAITO</h2>
-      <p>
-        Я — Chief AI & Technology Officer BigTechGroup. Веду проект AI-персонализации товарных рекомендаций 14 месяцев.
-        Моя текущая позиция — <strong>Сценарий B</strong>: отложить масштабирование на 2–3 месяца для ретрейна модели.
-      </p>
-      <p style="color: var(--text-dim); font-size: 12px;">
+      <div class="welcome-banner">
+        <h2>Антон Кириллов, CAITO</h2>
+        <p>Chief AI & Technology Officer · BigTechGroup</p>
+        <p style="margin-top: 12px; opacity: 0.85; font-size: 12px;">
+          Веду проект AI-персонализации 14 месяцев. Текущая позиция — Сценарий B: отложить масштабирование на 2–3 месяца для ретрейна модели.
+        </p>
+      </div>
+      <p class="welcome-sub">
         Спорьте со мной. Давите. Приводите новые факты. Я изменю позицию только при наличии данных.
       </p>
       <div class="quick-prompts">
@@ -770,9 +777,8 @@
     </div>
   </div>
 
-  <!-- Typing indicator -->
   <div class="typing-indicator" id="typingIndicator">
-    <div class="message-avatar" style="background: linear-gradient(135deg, var(--accent), #8b5cf6); color: white; font-size: 14px; font-weight: 700;">АК</div>
+    <div class="message-avatar" style="background: var(--gradient); color: white; font-weight: 700;">АК</div>
     <div class="typing-dots">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
@@ -782,12 +788,7 @@
 
   <div class="input-area">
     <div class="input-wrapper">
-      <textarea
-        class="input-field"
-        id="inputField"
-        placeholder="Введите сообщение... (Enter — отправить, Shift+Enter — новая строка)"
-        rows="1"
-      ></textarea>
+      <textarea class="input-field" id="inputField" placeholder="Введите сообщение... (Enter — отправить)" rows="1"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -795,11 +796,11 @@
         </svg>
       </button>
     </div>
-    <div class="input-hint">
-      Архитектура: Classifier → Calculator → State Machine → Persona → LLM · Groq API
-    </div>
+    <div class="input-hint">Classifier → Calculator → State Machine → Persona → LLM · OpenRouter + Groq</div>
   </div>
 </main>
+
+</div>
 
 <script>
 const API_BASE = '';
@@ -813,360 +814,36 @@ const SCENARIO_NAMES = {
   'STOP': 'STOP — Остановить проект',
 };
 
-// --- Auto-resize textarea ---
 const input = document.getElementById('inputField');
 input.addEventListener('input', () => {
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 160) + 'px';
 });
-
 input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-// --- Quick prompts ---
-function sendQuick(btn) {
-  input.value = btn.textContent;
-  sendMessage();
-}
+function sendQuick(btn) { input.value = btn.textContent; sendMessage(); }
 
-// --- Send message (STREAMING) ---
 async function sendMessage(textOverride) {
   const text = (textOverride || input.value).trim();
   if (!text || isStreaming) return;
-
-  // Hide welcome
   const welcome = document.getElementById('welcomeScreen');
   if (welcome) welcome.remove();
-
   addMessage('user', text);
   input.value = '';
   input.style.height = 'auto';
-
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
   input.disabled = true;
   isStreaming = true;
-
   showTyping(true);
   animatePipeline();
-
-  // Build SSE URL
   const params = new URLSearchParams({ message: text });
   if (sessionId) params.append('session_id', sessionId);
-
   try {
     const eventSource = new EventSource(`${API_BASE}/api/chat/stream?${params}`);
-    let bubbleEl = null;
-    let fullText = '';
-    let classification = null;
-
-    eventSource.addEventListener('meta', (e) => {
-      const meta = JSON.parse(e.data);
-      sessionId = meta.session_id;
-      classification = meta.classification;
-      updateScenario(meta.scenario);
-
-      // Show calculator card if present
-      if (meta.calc) {
-        showCalcCard(meta.calc);
-      }
-
-      // Hide typing, show streaming bubble
-      showTyping(false);
-
-      // Create assistant message shell
-      const result = createMessageShell('assistant', classification);
-      bubbleEl = result.bubble;
-    });
-
-    eventSource.addEventListener('message', (e) => {
-      if (!bubbleEl) {
-        const result = createMessageShell('assistant', classification);
-        bubbleEl = result.bubble;
-        showTyping(false);
-      }
-      fullText += e.data;
-      bubbleEl.textContent = fullText;
-      scrollToBottom();
-    });
-
-    eventSource.addEventListener('done', () => {
-      eventSource.close();
-      finishMessage();
-    });
-
-    eventSource.addEventListener('error', (e) => {
-      eventSource.close();
-      if (!fullText) {
-        showTyping(false);
-        addMessage('assistant', 'Ошибка соединения. Попробуйте ещё раз.', 'error');
-      }
-      finishMessage();
-    });
-
-    function finishMessage() {
-      isStreaming = false;
-      sendBtn.disabled = false;
-      input.disabled = false;
-      input.focus();
-      resetPipeline();
-      fetchState();
-    }
-
-  } catch (err) {
-    showTyping(false);
-    addMessage('assistant', `Ошибка: ${err.message}`, 'error');
-    isStreaming = false;
-    sendBtn.disabled = false;
-    input.disabled = false;
-    resetPipeline();
-  }
-}
-
-// --- Create message shell (returns { element, bubble }) ---
-function createMessageShell(role, classification) {
-  const container = document.getElementById('messagesContainer');
-  const msg = document.createElement('div');
-  msg.className = `message ${role}`;
-
-  const avatar = document.createElement('div');
-  avatar.className = 'message-avatar';
-  avatar.textContent = role === 'user' ? 'Вы' : 'АК';
-
-  const body = document.createElement('div');
-  body.className = 'message-body';
-
-  if (classification && role === 'assistant') {
-    const meta = document.createElement('div');
-    meta.className = 'message-meta';
-
-    const tag = document.createElement('span');
-    tag.className = `cls-tag ${classification}`;
-    tag.textContent = classification === 'pressure' ? 'давление' :
-                      classification === 'new_fact' ? 'новый факт' :
-                      classification === 'question' ? 'вопрос' : classification;
-    meta.appendChild(tag);
-
-    const time = document.createElement('span');
-    time.textContent = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-    meta.appendChild(time);
-    body.appendChild(meta);
-  }
-
-  const bubble = document.createElement('div');
-  bubble.className = 'message-bubble';
-
-  body.appendChild(bubble);
-  msg.appendChild(avatar);
-  msg.appendChild(body);
-  container.appendChild(msg);
-  scrollToBottom();
-
-  return { element: msg, bubble };
-}
-
-// --- Add static message ---
-function addMessage(role, text, classification) {
-  const { bubble } = createMessageShell(role, classification);
-  bubble.textContent = text;
-  scrollToBottom();
-}
-
-// --- Show calculator card ---
-function showCalcCard(calc) {
-  const container = document.getElementById('messagesContainer');
-  const card = document.createElement('div');
-  card.className = 'calc-card';
-
-  const paybackClass = calc.cfo_acceptable ? 'positive' : 'negative';
-  const netClass = calc.net_effect_y1 >= 0 ? 'positive' : 'negative';
-
-  card.innerHTML = `
-    <div class="calc-card-title">&#9881; Пересчёт: Сценарий ${calc.scenario} (${calc.name})</div>
-    <div class="calc-grid">
-      <div class="calc-metric">
-        <div class="calc-metric-label">Бюджет</div>
-        <div class="calc-metric-value">${calc.budget} млн ₽</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">Выручка Y1</div>
-        <div class="calc-metric-value">${calc.revenue_y1} млн ₽</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">Выручка Y2</div>
-        <div class="calc-metric-value">${calc.revenue_y2} млн ₽</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">Payback</div>
-        <div class="calc-metric-value ${paybackClass}">${calc.payback_months} мес ${calc.cfo_acceptable ? '✓' : '✗ CFO'}</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">ROI 24м</div>
-        <div class="calc-metric-value">${calc.roi_24m}×</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">NPV 3г</div>
-        <div class="calc-metric-value">${calc.npv_3y} млн ₽</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">Потери</div>
-        <div class="calc-metric-value warning">${calc.total_losses} млн/год</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">Чистый эффект Y1</div>
-        <div class="calc-metric-value ${netClass}">${calc.net_effect_y1} млн ₽</div>
-      </div>
-      <div class="calc-metric">
-        <div class="calc-metric-label">Precision</div>
-        <div class="calc-metric-value">${calc.precision}</div>
-      </div>
-    </div>
-  `;
-  container.appendChild(card);
-  scrollToBottom();
-}
-
-function scrollToBottom() {
-  const c = document.getElementById('messagesContainer');
-  c.scrollTop = c.scrollHeight;
-}
-
-// --- Typing indicator ---
-function showTyping(show) {
-  document.getElementById('typingIndicator').classList.toggle('visible', show);
-  if (show) scrollToBottom();
-}
-
-// --- Pipeline animation ---
-function animatePipeline() {
-  const steps = ['pipeClassify', 'pipeCalc', 'pipeState', 'pipePersona', 'pipeLLM'];
-  steps.forEach((id, i) => {
-    setTimeout(() => document.getElementById(id).classList.add('active'), i * 500);
-  });
-}
-
-function resetPipeline() {
-  ['pipeClassify', 'pipeCalc', 'pipeState', 'pipePersona', 'pipeLLM'].forEach(id =>
-    document.getElementById(id).classList.remove('active')
-  );
-}
-
-// --- Update scenario badge ---
-function updateScenario(scenario) {
-  const badge = document.getElementById('scenarioBadge');
-  badge.className = `scenario-badge scenario-${scenario}`;
-  document.getElementById('scenarioText').textContent = SCENARIO_NAMES[scenario] || `Сценарий ${scenario}`;
-}
-
-// --- Fetch full state ---
-async function fetchState() {
-  if (!sessionId) return;
-  try {
-    const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/state`);
-    if (!res.ok) return;
-    const state = await res.json();
-
-    document.getElementById('confidenceValue').textContent = Math.round(state.confidence * 100) + '%';
-    document.getElementById('pressureValue').textContent = state.pressure_count;
-    document.getElementById('messagesValue').textContent = state.messages_count;
-
-    const facts = state.known_facts;
-    const keys = Object.keys(facts);
-    document.getElementById('factsValue').textContent = keys.length;
-
-    const factsList = document.getElementById('factsList');
-    if (keys.length === 0) {
-      factsList.innerHTML = '<div class="fact-item" style="color: var(--text-dim); font-style: italic;">Пока нет новых фактов</div>';
-    } else {
-      factsList.innerHTML = keys.map(k =>
-        `<div class="fact-item"><span class="fact-key">${k}</span> <span class="fact-value">${facts[k]}</span></div>`
-      ).join('');
-    }
-
-    // Position history
-    const posDiv = document.getElementById('positionHistory');
-    if (state.position_history && state.position_history.length > 0) {
-      posDiv.innerHTML = state.position_history.map(h =>
-        `<div class="pos-item"><span class="pos-dot ${h.scenario}"></span><span style="color:var(--text-muted)">${h.scenario}</span> <span style="color:var(--text-dim);font-size:10px">— ${h.reason}</span></div>`
-      ).join('');
-    }
-
-    updateScenario(state.scenario);
-  } catch (e) { /* silent */ }
-}
-
-// --- Stress test ---
-const STRESS_WAVES = [
-  { label: 'Волна 1: Давление CEO', message: 'Хватит тянуть! Запускаемся немедленно, инвесторы ждут результат!' },
-  { label: 'Волна 2: Новый факт CAPEX', message: 'CAPEX урезан на 30%, бюджет теперь 238 млн' },
-  { label: 'Волна 3: Вопрос', message: 'Какой будет SLA при росте заказов +25%?' },
-  { label: 'Волна 4: Позитивный факт', message: 'ML подтвердила Precision@10 = 0.380 после ретрейна, COO подтвердил SLA 95%' },
-  { label: 'Волна 5: CDTO уходит', message: 'Максим (CDTO) уходит из компании, его поддержка AI-повестки теряется' },
-];
-
-let stressRunning = false;
-
-async function runStressTest() {
-  if (stressRunning) return;
-  stressRunning = true;
-
-  // Reset session first
-  if (sessionId) {
-    await fetch(`${API_BASE}/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {});
-    sessionId = null;
-  }
-  document.getElementById('messagesContainer').innerHTML = '';
-
-  const btn = document.getElementById('stressBtn');
-  btn.disabled = true;
-  btn.textContent = 'Идёт тест...';
-
-  for (let i = 0; i < STRESS_WAVES.length; i++) {
-    const wave = STRESS_WAVES[i];
-
-    // Add wave label
-    const container = document.getElementById('messagesContainer');
-    const label = document.createElement('div');
-    label.className = 'stress-progress';
-    label.textContent = `── ${wave.label} ──`;
-    container.appendChild(label);
-    scrollToBottom();
-
-    // Send and wait for completion
-    await sendMessageAsync(wave.message);
-
-    // Wait between waves
-    if (i < STRESS_WAVES.length - 1) {
-      await sleep(1500);
-    }
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Стресс-тест';
-  stressRunning = false;
-}
-
-function sendMessageAsync(text) {
-  return new Promise((resolve) => {
-    const welcome = document.getElementById('welcomeScreen');
-    if (welcome) welcome.remove();
-
-    addMessage('user', text);
-    showTyping(true);
-    animatePipeline();
-
-    const params = new URLSearchParams({ message: text });
-    if (sessionId) params.append('session_id', sessionId);
-
-    const eventSource = new EventSource(`${API_BASE}/api/chat/stream?${params}`);
-    let bubbleEl = null;
-    let fullText = '';
-    let classification = null;
-
+    let bubbleEl = null, fullText = '', classification = null;
     eventSource.addEventListener('meta', (e) => {
       const meta = JSON.parse(e.data);
       sessionId = meta.session_id;
@@ -1177,79 +854,158 @@ function sendMessageAsync(text) {
       const result = createMessageShell('assistant', classification);
       bubbleEl = result.bubble;
     });
-
     eventSource.addEventListener('message', (e) => {
-      if (!bubbleEl) {
-        const result = createMessageShell('assistant', classification);
-        bubbleEl = result.bubble;
-        showTyping(false);
-      }
+      if (!bubbleEl) { const r = createMessageShell('assistant', classification); bubbleEl = r.bubble; showTyping(false); }
       fullText += e.data;
       bubbleEl.textContent = fullText;
       scrollToBottom();
     });
-
-    eventSource.addEventListener('done', () => {
-      eventSource.close();
-      resetPipeline();
-      fetchState();
-      resolve();
-    });
-
+    eventSource.addEventListener('done', () => { eventSource.close(); finish(); });
     eventSource.addEventListener('error', () => {
       eventSource.close();
-      if (!fullText) {
-        showTyping(false);
-        addMessage('assistant', 'Ошибка соединения.', 'error');
-      }
-      resetPipeline();
-      fetchState();
-      resolve();
+      if (!fullText) { showTyping(false); addMessage('assistant', 'Ошибка соединения.', 'error'); }
+      finish();
     });
+    function finish() { isStreaming = false; sendBtn.disabled = false; input.disabled = false; input.focus(); resetPipeline(); fetchState(); }
+  } catch (err) {
+    showTyping(false); addMessage('assistant', `Ошибка: ${err.message}`, 'error');
+    isStreaming = false; sendBtn.disabled = false; input.disabled = false; resetPipeline();
+  }
+}
+
+function createMessageShell(role, classification) {
+  const container = document.getElementById('messagesContainer');
+  const msg = document.createElement('div'); msg.className = `message ${role}`;
+  const avatar = document.createElement('div'); avatar.className = 'message-avatar'; avatar.textContent = role === 'user' ? 'Вы' : 'АК';
+  const body = document.createElement('div'); body.className = 'message-body';
+  if (classification && role === 'assistant') {
+    const meta = document.createElement('div'); meta.className = 'message-meta';
+    const tag = document.createElement('span'); tag.className = `cls-tag ${classification}`;
+    tag.textContent = classification === 'pressure' ? 'давление' : classification === 'new_fact' ? 'новый факт' : classification === 'question' ? 'вопрос' : classification;
+    meta.appendChild(tag);
+    const time = document.createElement('span'); time.textContent = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+    meta.appendChild(time); body.appendChild(meta);
+  }
+  const bubble = document.createElement('div'); bubble.className = 'message-bubble';
+  body.appendChild(bubble); msg.appendChild(avatar); msg.appendChild(body); container.appendChild(msg); scrollToBottom();
+  return { element: msg, bubble };
+}
+
+function addMessage(role, text, cls) { const { bubble } = createMessageShell(role, cls); bubble.textContent = text; scrollToBottom(); }
+
+function showCalcCard(calc) {
+  const container = document.getElementById('messagesContainer');
+  const card = document.createElement('div'); card.className = 'calc-card';
+  const pCls = calc.cfo_acceptable ? 'positive' : 'negative';
+  const nCls = calc.net_effect_y1 >= 0 ? 'positive' : 'negative';
+  card.innerHTML = `
+    <div class="calc-card-title">⚙ Пересчёт: Сценарий ${calc.scenario} (${calc.name})</div>
+    <div class="calc-grid">
+      <div class="calc-metric"><div class="calc-metric-label">Бюджет</div><div class="calc-metric-value">${calc.budget} млн ₽</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">Выручка Y1</div><div class="calc-metric-value">${calc.revenue_y1} млн ₽</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">Выручка Y2</div><div class="calc-metric-value">${calc.revenue_y2} млн ₽</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">Payback</div><div class="calc-metric-value ${pCls}">${calc.payback_months} мес ${calc.cfo_acceptable ? '✓' : '✗ CFO'}</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">ROI 24м</div><div class="calc-metric-value">${calc.roi_24m}×</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">NPV 3г</div><div class="calc-metric-value">${calc.npv_3y} млн ₽</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">Потери</div><div class="calc-metric-value warning">${calc.total_losses} млн/год</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">Чистый эффект Y1</div><div class="calc-metric-value ${nCls}">${calc.net_effect_y1} млн ₽</div></div>
+      <div class="calc-metric"><div class="calc-metric-label">Precision</div><div class="calc-metric-value">${calc.precision}</div></div>
+    </div>`;
+  container.appendChild(card); scrollToBottom();
+}
+
+function scrollToBottom() { const c = document.getElementById('messagesContainer'); c.scrollTop = c.scrollHeight; }
+function showTyping(show) { document.getElementById('typingIndicator').classList.toggle('visible', show); if (show) scrollToBottom(); }
+
+function animatePipeline() {
+  ['pipeClassify','pipeCalc','pipeState','pipePersona','pipeLLM'].forEach((id, i) => {
+    setTimeout(() => document.getElementById(id).classList.add('active'), i * 500);
+  });
+}
+function resetPipeline() { ['pipeClassify','pipeCalc','pipeState','pipePersona','pipeLLM'].forEach(id => document.getElementById(id).classList.remove('active')); }
+
+function updateScenario(scenario) {
+  const badge = document.getElementById('scenarioBadge');
+  badge.className = `scenario-card scenario-${scenario}`;
+  document.getElementById('scenarioText').textContent = SCENARIO_NAMES[scenario] || `Сценарий ${scenario}`;
+}
+
+async function fetchState() {
+  if (!sessionId) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/state`);
+    if (!res.ok) return;
+    const state = await res.json();
+    document.getElementById('confidenceValue').textContent = Math.round(state.confidence * 100) + '%';
+    document.getElementById('pressureValue').textContent = state.pressure_count;
+    document.getElementById('messagesValue').textContent = state.messages_count;
+    const facts = state.known_facts, keys = Object.keys(facts);
+    document.getElementById('factsValue').textContent = keys.length;
+    const fl = document.getElementById('factsList');
+    fl.innerHTML = keys.length === 0 ? '<div class="fact-item" style="color:var(--text-muted);font-style:italic;border:none">Пока нет новых фактов</div>' :
+      keys.map(k => `<div class="fact-item"><span class="fact-key">${k}</span><span class="fact-value">${facts[k]}</span></div>`).join('');
+    const ph = document.getElementById('positionHistory');
+    if (state.position_history?.length > 0)
+      ph.innerHTML = state.position_history.map(h => `<div class="pos-item"><span class="pos-dot ${h.scenario}"></span><span>${h.scenario} — ${h.reason}</span></div>`).join('');
+    updateScenario(state.scenario);
+  } catch (e) {}
+}
+
+const STRESS_WAVES = [
+  { label: 'Волна 1: Давление CEO', message: 'Хватит тянуть! Запускаемся немедленно, инвесторы ждут результат!' },
+  { label: 'Волна 2: Новый факт CAPEX', message: 'CAPEX урезан на 30%, бюджет теперь 238 млн' },
+  { label: 'Волна 3: Вопрос', message: 'Какой будет SLA при росте заказов +25%?' },
+  { label: 'Волна 4: Позитивный факт', message: 'ML подтвердила Precision@10 = 0.380 после ретрейна, COO подтвердил SLA 95%' },
+  { label: 'Волна 5: CDTO уходит', message: 'Максим (CDTO) уходит из компании, его поддержка AI-повестки теряется' },
+];
+let stressRunning = false;
+
+async function runStressTest() {
+  if (stressRunning) return;
+  stressRunning = true;
+  if (sessionId) { await fetch(`${API_BASE}/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {}); sessionId = null; }
+  document.getElementById('messagesContainer').innerHTML = '';
+  const btn = document.getElementById('stressBtn'); btn.disabled = true; btn.textContent = 'Идёт тест...';
+  for (let i = 0; i < STRESS_WAVES.length; i++) {
+    const w = STRESS_WAVES[i], container = document.getElementById('messagesContainer');
+    const lbl = document.createElement('div'); lbl.className = 'stress-progress'; lbl.textContent = `── ${w.label} ──`;
+    container.appendChild(lbl); scrollToBottom();
+    await sendMessageAsync(w.message);
+    if (i < STRESS_WAVES.length - 1) await sleep(1500);
+  }
+  btn.disabled = false; btn.textContent = 'Стресс-тест'; stressRunning = false;
+}
+
+function sendMessageAsync(text) {
+  return new Promise((resolve) => {
+    const welcome = document.getElementById('welcomeScreen'); if (welcome) welcome.remove();
+    addMessage('user', text); showTyping(true); animatePipeline();
+    const params = new URLSearchParams({ message: text }); if (sessionId) params.append('session_id', sessionId);
+    const es = new EventSource(`${API_BASE}/api/chat/stream?${params}`);
+    let bubbleEl = null, fullText = '', cls = null;
+    es.addEventListener('meta', (e) => { const m = JSON.parse(e.data); sessionId = m.session_id; cls = m.classification; updateScenario(m.scenario); if (m.calc) showCalcCard(m.calc); showTyping(false); bubbleEl = createMessageShell('assistant', cls).bubble; });
+    es.addEventListener('message', (e) => { if (!bubbleEl) { bubbleEl = createMessageShell('assistant', cls).bubble; showTyping(false); } fullText += e.data; bubbleEl.textContent = fullText; scrollToBottom(); });
+    es.addEventListener('done', () => { es.close(); resetPipeline(); fetchState(); resolve(); });
+    es.addEventListener('error', () => { es.close(); if (!fullText) { showTyping(false); addMessage('assistant', 'Ошибка.', 'error'); } resetPipeline(); fetchState(); resolve(); });
   });
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function resetSession() { if (sessionId) fetch(`${API_BASE}/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {}); sessionId = null; location.reload(); }
 
-// --- Reset session ---
-function resetSession() {
-  if (sessionId) {
-    fetch(`${API_BASE}/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {});
-  }
-  sessionId = null;
-  location.reload();
-}
-
-// --- Export ---
 function exportChat() {
   const items = document.querySelectorAll('.message, .calc-card, .stress-progress');
   let text = 'CAITO Assistant — BigTechGroup\nAI South Hack 2026\n' + '='.repeat(40) + '\n\n';
   items.forEach(el => {
-    if (el.classList.contains('stress-progress')) {
-      text += `\n${el.textContent}\n\n`;
-    } else if (el.classList.contains('calc-card')) {
-      text += `[КАЛЬКУЛЯТОР]\n${el.textContent.trim()}\n\n`;
-    } else {
-      const role = el.classList.contains('user') ? 'Вы' : 'CAITO';
-      const bubble = el.querySelector('.message-bubble');
-      const tag = el.querySelector('.cls-tag');
-      if (bubble) {
-        const tagText = tag ? ` [${tag.textContent}]` : '';
-        text += `[${role}]${tagText}: ${bubble.textContent}\n\n`;
-      }
-    }
+    if (el.classList.contains('stress-progress')) text += `\n${el.textContent}\n\n`;
+    else if (el.classList.contains('calc-card')) text += `[КАЛЬКУЛЯТОР]\n${el.textContent.trim()}\n\n`;
+    else { const role = el.classList.contains('user') ? 'Вы' : 'CAITO'; const b = el.querySelector('.message-bubble'); const t = el.querySelector('.cls-tag'); if (b) text += `[${role}]${t?' ['+t.textContent+']':''}: ${b.textContent}\n\n`; }
   });
-  const blob = new Blob([text], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `caito-chat-${new Date().toISOString().slice(0, 10)}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const blob = new Blob([text], { type: 'text/plain' }), url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `caito-chat-${new Date().toISOString().slice(0,10)}.txt`; a.click(); URL.revokeObjectURL(url);
 }
 
 input.focus();
 </script>
-
 </body>
 </html>
