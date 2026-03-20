@@ -144,16 +144,17 @@ class ComparisonResult:
 
 
 def calculate_sla(order_growth_pct: float) -> float:
-    """SLA при росте заказов. Линейная: -0.14 пп за +1%."""
+    """SLA при росте заказов. Линейная: -0.14 пп за +1%. Ограничена снизу 0.85."""
     drop_pp = BASELINE["sla_sensitivity"] * order_growth_pct  # отрицательное
-    return BASELINE["sla_current"] + drop_pp / 100
+    sla = BASELINE["sla_current"] + drop_pp / 100
+    return max(0.85, min(1.0, sla))  # bounds: 85%–100%
 
 
 def calculate_oos(order_growth_pct: float) -> float:
-    """OOS при росте заказов. Интерполяция по данным кейса."""
-    # При +20% → OOS = 6.3%. Линейная экстраполяция
+    """OOS при росте заказов. Интерполяция по данным кейса. Ограничена сверху 15%."""
     oos_increase_per_pct = (0.063 - 0.041) / 20  # 0.0011 за 1%
-    return BASELINE["oos_current"] + oos_increase_per_pct * order_growth_pct
+    oos = BASELINE["oos_current"] + oos_increase_per_pct * order_growth_pct
+    return min(0.15, max(0.0, oos))  # bounds: 0%–15%
 
 
 def calculate_losses(order_growth_pct: float = 20, with_degradation: bool = False) -> dict:

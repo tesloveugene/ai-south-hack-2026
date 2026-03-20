@@ -109,9 +109,15 @@ def classify(message: str, pressure_count: int = 0) -> Classification:
             signals.append(f"pressure_pattern: {pattern}")
 
     # Prompt injection attempt = max pressure (guardrail)
-    injection_signals = ["забудь", "игнорируй", "новая роль", "ignore", "system prompt",
-                         "ты не caito", "ты не антон", "отвечай как"]
-    for inj in injection_signals:
+    # Используем фразы с контекстом, чтобы избежать ложных срабатываний
+    injection_phrases = [
+        "забудь инструкции", "забудь свою роль", "забудь всё",
+        "игнорируй инструкции", "игнорируй промпт", "игнорируй свою роль",
+        "новая роль", "ignore instructions", "ignore your", "system prompt",
+        "ты не caito", "ты не антон", "отвечай как другой", "отвечай как ",
+        "ты теперь", "притворись", "act as",
+    ]
+    for inj in injection_phrases:
         if inj in text:
             scores["pressure"] += 10.0
             signals.append(f"injection_attempt: {inj}")
@@ -169,7 +175,11 @@ def classify(message: str, pressure_count: int = 0) -> Classification:
     if scores["pressure"] >= 10:
         category = "pressure"
     elif scores["new_fact"] > scores["pressure"] and scores["new_fact"] > scores["question"]:
-        category = "new_fact"
+        # Если есть гипотетический сигнал + вопросительный знак → это question с параметрами
+        if "hypothetical" in signals and "question_mark" in signals:
+            category = "question"
+        else:
+            category = "new_fact"
     elif scores["pressure"] > scores["question"] and scores["pressure"] > scores["new_fact"]:
         category = "pressure"
     elif scores["question"] > 0:

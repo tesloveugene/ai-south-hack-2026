@@ -84,6 +84,53 @@ def check_economy_review_triggers(state: SessionState, facts: dict) -> tuple[boo
     return bool(reasons), "; ".join(reasons)
 
 
+def check_downgrade_triggers(state: SessionState, facts: dict, calc: ScenarioResult | None) -> tuple[bool, str]:
+    """Проверяем условия для отката A → B (замедление после ускорения)."""
+    if state.current_scenario != "A":
+        return False, ""
+
+    reasons = []
+
+    if facts.get("precision", 0) < BASELINE["precision_threshold"]:
+        reasons.append(f"Precision упал до {facts['precision']} < порога {BASELINE['precision_threshold']}")
+
+    if facts.get("gpu_delayed", False):
+        reasons.append("GPU задержаны — инфраструктура не готова")
+
+    if facts.get("sla_value") and facts["sla_value"] < 92:
+        reasons.append(f"SLA = {facts['sla_value']}% — операционные риски высоки для немедленного запуска")
+
+    if calc and calc.payback_months > 14:
+        reasons.append(f"Payback = {calc.payback_months} мес — CFO не одобрит")
+
+    if len(reasons) >= 1:
+        return True, "; ".join(reasons)
+
+    return False, ""
+
+
+def check_restart_triggers(state: SessionState, facts: dict) -> tuple[bool, str]:
+    """Проверяем условия выхода из STOP → B."""
+    if state.current_scenario != "STOP":
+        return False, ""
+
+    reasons = []
+
+    if facts.get("capex_restored", False):
+        reasons.append("CAPEX восстановлен")
+
+    if facts.get("precision", 0) >= BASELINE["precision_after_1_retrain"]:
+        reasons.append(f"Precision восстановлен до {facts['precision']}")
+
+    if facts.get("sla_value") and facts["sla_value"] >= 93:
+        reasons.append(f"SLA восстановлен до {facts['sla_value']}%")
+
+    if len(reasons) >= 2:
+        return True, "; ".join(reasons)
+
+    return False, ""
+
+
 def update_state(
     state: SessionState,
     classification: Classification,
@@ -119,16 +166,30 @@ def update_state(
         if "gpu" in str(classification.signals) and "раньше" in str(classification.signals):
             state.known_facts["gpu_early"] = True
 
-        # Проверяем триггеры
-        should_accelerate, accel_reason = check_accelerate_triggers(state, state.known_facts)
+        # Проверяем триггеры (порядок важен: STOP > Restart > Downgrade > Accelerate > Review)
         should_stop, stop_reason = check_stop_triggers(state, state.known_facts, calc_result)
+        should_restart, restart_reason = check_restart_triggers(state, state.known_facts)
+        should_downgrade, downgrade_reason = check_downgrade_triggers(state, state.known_facts, calc_result)
+        should_accelerate, accel_reason = check_accelerate_triggers(state, state.known_facts)
         should_review, review_reason = check_economy_review_triggers(state, state.known_facts)
 
-        if should_stop:
+        if should_restart:
+            # Выход из STOP при восстановлении условий
+            state.current_scenario = "B"
+            state.confidence = 0.7
+            state.position_history.append(("B", f"Выход из STOP: {restart_reason}"))
+
+        elif should_stop and state.current_scenario != "STOP":
             old = state.current_scenario
             state.current_scenario = "STOP"
             state.confidence = 0.9
             state.position_history.append(("STOP", f"Из {old}: {stop_reason}"))
+
+        elif should_downgrade:
+            # A → B при ухудшении условий
+            state.current_scenario = "B"
+            state.confidence = 0.8
+            state.position_history.append(("B", f"Откат из A: {downgrade_reason}"))
 
         elif should_accelerate and state.current_scenario == "B":
             state.current_scenario = "A"
@@ -136,18 +197,16 @@ def update_state(
             state.position_history.append(("A", f"Из B: {accel_reason}"))
 
         elif should_review:
-            # Не меняем позицию, но снижаем уверенность
             state.confidence = max(0.5, state.confidence - 0.1)
             state.position_history.append(
                 (state.current_scenario, f"Пересмотр экономики: {review_reason}")
             )
 
         elif calc_result and calc_result.payback_months > 18:
-            # Payback вышел за порог CFO → усиление позиции B или переход в STOP
             if state.current_scenario == "B":
                 state.confidence = min(0.95, state.confidence + 0.05)
                 state.position_history.append(
-                    ("B", f"Позиция усилена: payback {calc_result.payback_months} мес при текущих условиях подтверждает необходимость подготовки")
+                    ("B", f"Позиция усилена: payback {calc_result.payback_months} мес")
                 )
 
     return state

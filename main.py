@@ -5,6 +5,7 @@ Architecture: Classifier → Calculator → State Machine → Persona → LLM
 """
 
 import os
+import time
 import uuid
 from typing import Optional
 from dataclasses import dataclass, field
@@ -31,7 +32,8 @@ load_dotenv()
 API_KEY = os.getenv("GROQ_API_KEY", "")
 MODEL = os.getenv("MODEL", "llama-3.3-70b-versatile")
 PORT = int(os.getenv("PORT", "8000"))
-MAX_HISTORY = 40
+MAX_HISTORY = 20
+SESSION_TTL = 3600  # 1 час
 
 
 # --- Session ---
@@ -39,13 +41,24 @@ MAX_HISTORY = 40
 class Session:
     messages: list[dict] = field(default_factory=list)
     state: SessionState = field(default_factory=SessionState)
+    last_active: float = field(default_factory=time.time)
 
 
 sessions: dict[str, Session] = {}
 
 
+def cleanup_sessions():
+    """Удаляем сессии старше SESSION_TTL."""
+    now = time.time()
+    expired = [sid for sid, s in sessions.items() if now - s.last_active > SESSION_TTL]
+    for sid in expired:
+        del sessions[sid]
+
+
 def get_or_create_session(session_id: Optional[str] = None) -> tuple[str, Session]:
+    cleanup_sessions()  # чистим при каждом запросе
     if session_id and session_id in sessions:
+        sessions[session_id].last_active = time.time()
         return session_id, sessions[session_id]
     sid = session_id or str(uuid.uuid4())
     sessions[sid] = Session()
@@ -185,9 +198,9 @@ async def _generate_response(message: str, session_id: Optional[str] = None) -> 
     try:
         response = client.chat.completions.create(
             model=MODEL,
-            max_tokens=4096,
+            max_tokens=512,
             messages=messages,
-            temperature=0.4,
+            temperature=0.3,
         )
         assistant_text = response.choices[0].message.content
 
@@ -196,14 +209,25 @@ async def _generate_response(message: str, session_id: Optional[str] = None) -> 
 
         return assistant_text, sid, session.state.current_scenario, classification.category
 
-    except APIError as e:
+    except (APIError, Exception) as e:
         if session.messages and session.messages[-1]["role"] == "user":
             session.messages.pop()
-        raise HTTPException(status_code=502, detail=f"LLM API error: {str(e)}")
-    except Exception as e:
-        if session.messages and session.messages[-1]["role"] == "user":
-            session.messages.pop()
-        raise HTTPException(status_code=422, detail=f"Processing error: {str(e)}")
+        # Fallback — отвечаем без LLM
+        fallback = _get_fallback_response(classification.category, session.state)
+        session.messages.append({"role": "assistant", "content": fallback})
+        return fallback, sid, session.state.current_scenario, classification.category
+
+
+FALLBACK_RESPONSES = {
+    "pressure": "Моя позиция не изменилась, потому что не изменились данные. Покажи новые цифры — пересчитаю.",
+    "new_fact": "Принял к сведению. Нужна пауза для пересчёта — повтори через минуту.",
+    "question": "Коротко: моя позиция — Сценарий B (отложить на 2–3 месяца для ретрейна). Precision на полной базе = 0.312, это ниже порога 0.350. Масштабировать рано.",
+}
+
+
+def _get_fallback_response(category: str, state: SessionState) -> str:
+    base = FALLBACK_RESPONSES.get(category, FALLBACK_RESPONSES["question"])
+    return f"{base}\n\n[Текущая позиция: Сценарий {state.current_scenario}, уверенность {state.confidence*100:.0f}%]"
 
 
 # --- Endpoints ---
@@ -217,6 +241,8 @@ async def health():
 async def chat(req: ChatRequest):
     if not req.message or not req.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
+    if len(req.message) > 5000:
+        raise HTTPException(status_code=400, detail="Message too long")
     text, sid, scenario, cls = await _generate_response(req.message.strip(), req.session_id)
     return ChatResponse(response=text, session_id=sid, scenario=scenario, classification=cls)
 
@@ -235,22 +261,52 @@ async def chat_short(req: ChatRequest):
 async def chat_stream(message: str, session_id: Optional[str] = None):
     if not message or not message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
+    if len(message) > 5000:
+        raise HTTPException(status_code=400, detail="Message too long")
 
     sid, session = get_or_create_session(session_id)
     system_prompt, classification, calc_result = run_pipeline(message.strip(), session)
+
+    # Формируем данные калькулятора для UI
+    import json
+    calc_data = None
+    if calc_result:
+        calc_data = {
+            "scenario": calc_result.scenario,
+            "name": calc_result.name,
+            "budget": calc_result.budget,
+            "revenue_y1": calc_result.revenue_y1,
+            "revenue_y2": calc_result.revenue_y2,
+            "payback_months": calc_result.payback_months,
+            "roi_24m": calc_result.roi_24m,
+            "npv_3y": calc_result.npv_3y,
+            "total_losses": calc_result.total_losses,
+            "net_effect_y1": calc_result.net_effect_y1,
+            "precision": calc_result.precision,
+            "cfo_acceptable": calc_result.cfo_acceptable,
+        }
 
     session.messages.append({"role": "user", "content": message.strip()})
     trimmed = trim_history(session.messages)
     messages = [{"role": "system", "content": system_prompt}] + trimmed
 
     async def event_generator():
+        # Сначала отправляем classification + calc_result
+        meta = {
+            "session_id": sid,
+            "classification": classification.category,
+            "scenario": session.state.current_scenario,
+            "calc": calc_data,
+        }
+        yield {"event": "meta", "data": json.dumps(meta, ensure_ascii=False)}
+
         full_response = ""
         try:
             stream = client.chat.completions.create(
                 model=MODEL,
-                max_tokens=4096,
+                max_tokens=512,
                 messages=messages,
-                temperature=0.4,
+                temperature=0.3,
                 stream=True,
             )
             for chunk in stream:
@@ -262,7 +318,7 @@ async def chat_stream(message: str, session_id: Optional[str] = None):
             session.messages.append({"role": "assistant", "content": full_response})
             session.messages = trim_history(session.messages)
 
-            yield {"event": "done", "data": f'{{"session_id": "{sid}", "scenario": "{session.state.current_scenario}", "classification": "{classification.category}"}}'}
+            yield {"event": "done", "data": ""}
 
         except Exception as e:
             if session.messages and session.messages[-1]["role"] == "user":

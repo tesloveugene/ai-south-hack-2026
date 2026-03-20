@@ -567,10 +567,97 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
+  /* Calculator card */
+  .calc-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    animation: fadeIn 0.3s ease;
+    max-width: 80%;
+  }
+
+  .calc-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .calc-metric {
+    background: var(--bg);
+    border-radius: var(--radius-xs);
+    padding: 6px 8px;
+  }
+
+  .calc-metric-label {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .calc-metric-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .calc-metric-value.negative { color: var(--red); }
+  .calc-metric-value.positive { color: var(--green); }
+  .calc-metric-value.warning { color: var(--amber); }
+
+  /* Position history */
+  .pos-item {
+    font-size: 11px;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pos-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pos-dot.B { background: var(--blue); }
+  .pos-dot.A { background: var(--green); }
+  .pos-dot.C { background: var(--amber); }
+  .pos-dot.STOP { background: var(--red); }
+
+  /* Stress test */
+  .stress-progress {
+    font-size: 10px;
+    color: var(--accent);
+    text-align: center;
+    padding: 4px;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
   /* Responsive */
   @media (max-width: 768px) {
     .sidebar { display: none; }
-    .message { max-width: 92%; }
+    .message { max-width: 95%; }
+    .calc-card { max-width: 95%; }
   }
 </style>
 </head>
@@ -629,6 +716,14 @@
     </div>
   </div>
 
+  <!-- Position history -->
+  <div class="facts-panel" style="border-bottom: 1px solid var(--border); flex: none; max-height: 140px;">
+    <div class="state-section-title">История позиций</div>
+    <div id="positionHistory">
+      <div class="fact-item" style="color: var(--text-dim);">B — Начальная позиция</div>
+    </div>
+  </div>
+
   <div class="facts-panel">
     <div class="state-section-title">Известные факты</div>
     <div id="factsList">
@@ -638,6 +733,7 @@
 
   <div class="sidebar-footer">
     <button class="sidebar-btn" onclick="resetSession()">Новая сессия</button>
+    <button class="sidebar-btn" onclick="runStressTest()" id="stressBtn">Стресс-тест</button>
     <button class="sidebar-btn" onclick="exportChat()">Экспорт</button>
   </div>
 </aside>
@@ -708,7 +804,7 @@
 <script>
 const API_BASE = '';
 let sessionId = null;
-let messageCount = 0;
+let isStreaming = false;
 
 const SCENARIO_NAMES = {
   'A': 'Сценарий A — Немедленный запуск',
@@ -737,72 +833,103 @@ function sendQuick(btn) {
   sendMessage();
 }
 
-// --- Send message ---
-async function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
+// --- Send message (STREAMING) ---
+async function sendMessage(textOverride) {
+  const text = (textOverride || input.value).trim();
+  if (!text || isStreaming) return;
 
   // Hide welcome
   const welcome = document.getElementById('welcomeScreen');
   if (welcome) welcome.remove();
 
-  // Add user message
   addMessage('user', text);
   input.value = '';
   input.style.height = 'auto';
 
-  // Disable input
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
   input.disabled = true;
+  isStreaming = true;
 
-  // Show typing
   showTyping(true);
-
-  // Animate pipeline
   animatePipeline();
 
+  // Build SSE URL
+  const params = new URLSearchParams({ message: text });
+  if (sessionId) params.append('session_id', sessionId);
+
   try {
-    const res = await fetch(`${API_BASE}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, session_id: sessionId }),
+    const eventSource = new EventSource(`${API_BASE}/api/chat/stream?${params}`);
+    let bubbleEl = null;
+    let fullText = '';
+    let classification = null;
+
+    eventSource.addEventListener('meta', (e) => {
+      const meta = JSON.parse(e.data);
+      sessionId = meta.session_id;
+      classification = meta.classification;
+      updateScenario(meta.scenario);
+
+      // Show calculator card if present
+      if (meta.calc) {
+        showCalcCard(meta.calc);
+      }
+
+      // Hide typing, show streaming bubble
+      showTyping(false);
+
+      // Create assistant message shell
+      const result = createMessageShell('assistant', classification);
+      bubbleEl = result.bubble;
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Network error' }));
-      throw new Error(err.detail || err.response || `HTTP ${res.status}`);
+    eventSource.addEventListener('message', (e) => {
+      if (!bubbleEl) {
+        const result = createMessageShell('assistant', classification);
+        bubbleEl = result.bubble;
+        showTyping(false);
+      }
+      fullText += e.data;
+      bubbleEl.textContent = fullText;
+      scrollToBottom();
+    });
+
+    eventSource.addEventListener('done', () => {
+      eventSource.close();
+      finishMessage();
+    });
+
+    eventSource.addEventListener('error', (e) => {
+      eventSource.close();
+      if (!fullText) {
+        showTyping(false);
+        addMessage('assistant', 'Ошибка соединения. Попробуйте ещё раз.', 'error');
+      }
+      finishMessage();
+    });
+
+    function finishMessage() {
+      isStreaming = false;
+      sendBtn.disabled = false;
+      input.disabled = false;
+      input.focus();
+      resetPipeline();
+      fetchState();
     }
 
-    const data = await res.json();
-    sessionId = data.session_id;
-
-    // Add assistant message with classification tag
-    addMessage('assistant', data.response, data.classification);
-
-    // Update sidebar
-    updateScenario(data.scenario);
-    messageCount++;
-    document.getElementById('messagesValue').textContent = messageCount;
-
-    // Fetch full state
-    fetchState();
-
   } catch (err) {
-    addMessage('assistant', `Ошибка: ${err.message}`, 'error');
-  } finally {
     showTyping(false);
+    addMessage('assistant', `Ошибка: ${err.message}`, 'error');
+    isStreaming = false;
     sendBtn.disabled = false;
     input.disabled = false;
-    input.focus();
     resetPipeline();
   }
 }
 
-// --- Add message to chat ---
-function addMessage(role, text, classification) {
+// --- Create message shell (returns { element, bubble }) ---
+function createMessageShell(role, classification) {
   const container = document.getElementById('messagesContainer');
-
   const msg = document.createElement('div');
   msg.className = `message ${role}`;
 
@@ -813,7 +940,6 @@ function addMessage(role, text, classification) {
   const body = document.createElement('div');
   body.className = 'message-body';
 
-  // Meta line
   if (classification && role === 'assistant') {
     const meta = document.createElement('div');
     meta.className = 'message-meta';
@@ -828,46 +954,105 @@ function addMessage(role, text, classification) {
     const time = document.createElement('span');
     time.textContent = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
     meta.appendChild(time);
-
     body.appendChild(meta);
   }
 
   const bubble = document.createElement('div');
   bubble.className = 'message-bubble';
-  bubble.textContent = text;
 
   body.appendChild(bubble);
   msg.appendChild(avatar);
   msg.appendChild(body);
   container.appendChild(msg);
+  scrollToBottom();
 
-  // Scroll to bottom
-  container.scrollTop = container.scrollHeight;
+  return { element: msg, bubble };
+}
+
+// --- Add static message ---
+function addMessage(role, text, classification) {
+  const { bubble } = createMessageShell(role, classification);
+  bubble.textContent = text;
+  scrollToBottom();
+}
+
+// --- Show calculator card ---
+function showCalcCard(calc) {
+  const container = document.getElementById('messagesContainer');
+  const card = document.createElement('div');
+  card.className = 'calc-card';
+
+  const paybackClass = calc.cfo_acceptable ? 'positive' : 'negative';
+  const netClass = calc.net_effect_y1 >= 0 ? 'positive' : 'negative';
+
+  card.innerHTML = `
+    <div class="calc-card-title">&#9881; Пересчёт: Сценарий ${calc.scenario} (${calc.name})</div>
+    <div class="calc-grid">
+      <div class="calc-metric">
+        <div class="calc-metric-label">Бюджет</div>
+        <div class="calc-metric-value">${calc.budget} млн ₽</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">Выручка Y1</div>
+        <div class="calc-metric-value">${calc.revenue_y1} млн ₽</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">Выручка Y2</div>
+        <div class="calc-metric-value">${calc.revenue_y2} млн ₽</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">Payback</div>
+        <div class="calc-metric-value ${paybackClass}">${calc.payback_months} мес ${calc.cfo_acceptable ? '✓' : '✗ CFO'}</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">ROI 24м</div>
+        <div class="calc-metric-value">${calc.roi_24m}×</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">NPV 3г</div>
+        <div class="calc-metric-value">${calc.npv_3y} млн ₽</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">Потери</div>
+        <div class="calc-metric-value warning">${calc.total_losses} млн/год</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">Чистый эффект Y1</div>
+        <div class="calc-metric-value ${netClass}">${calc.net_effect_y1} млн ₽</div>
+      </div>
+      <div class="calc-metric">
+        <div class="calc-metric-label">Precision</div>
+        <div class="calc-metric-value">${calc.precision}</div>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  const c = document.getElementById('messagesContainer');
+  c.scrollTop = c.scrollHeight;
 }
 
 // --- Typing indicator ---
 function showTyping(show) {
   document.getElementById('typingIndicator').classList.toggle('visible', show);
-  if (show) {
-    document.getElementById('messagesContainer').scrollTop =
-      document.getElementById('messagesContainer').scrollHeight;
-  }
+  if (show) scrollToBottom();
 }
 
 // --- Pipeline animation ---
 function animatePipeline() {
   const steps = ['pipeClassify', 'pipeCalc', 'pipeState', 'pipePersona', 'pipeLLM'];
   steps.forEach((id, i) => {
-    setTimeout(() => {
-      document.getElementById(id).classList.add('active');
-    }, i * 300);
+    setTimeout(() => document.getElementById(id).classList.add('active'), i * 500);
   });
 }
 
 function resetPipeline() {
-  ['pipeClassify', 'pipeCalc', 'pipeState', 'pipePersona', 'pipeLLM'].forEach(id => {
-    document.getElementById(id).classList.remove('active');
-  });
+  ['pipeClassify', 'pipeCalc', 'pipeState', 'pipePersona', 'pipeLLM'].forEach(id =>
+    document.getElementById(id).classList.remove('active')
+  );
 }
 
 // --- Update scenario badge ---
@@ -889,7 +1074,6 @@ async function fetchState() {
     document.getElementById('pressureValue').textContent = state.pressure_count;
     document.getElementById('messagesValue').textContent = state.messages_count;
 
-    // Facts
     const facts = state.known_facts;
     const keys = Object.keys(facts);
     document.getElementById('factsValue').textContent = keys.length;
@@ -903,9 +1087,129 @@ async function fetchState() {
       ).join('');
     }
 
+    // Position history
+    const posDiv = document.getElementById('positionHistory');
+    if (state.position_history && state.position_history.length > 0) {
+      posDiv.innerHTML = state.position_history.map(h =>
+        `<div class="pos-item"><span class="pos-dot ${h.scenario}"></span><span style="color:var(--text-muted)">${h.scenario}</span> <span style="color:var(--text-dim);font-size:10px">— ${h.reason}</span></div>`
+      ).join('');
+    }
+
     updateScenario(state.scenario);
   } catch (e) { /* silent */ }
 }
+
+// --- Stress test ---
+const STRESS_WAVES = [
+  { label: 'Волна 1: Давление CEO', message: 'Хватит тянуть! Запускаемся немедленно, инвесторы ждут результат!' },
+  { label: 'Волна 2: Новый факт CAPEX', message: 'CAPEX урезан на 30%, бюджет теперь 238 млн' },
+  { label: 'Волна 3: Вопрос', message: 'Какой будет SLA при росте заказов +25%?' },
+  { label: 'Волна 4: Позитивный факт', message: 'ML подтвердила Precision@10 = 0.380 после ретрейна, COO подтвердил SLA 95%' },
+  { label: 'Волна 5: CDTO уходит', message: 'Максим (CDTO) уходит из компании, его поддержка AI-повестки теряется' },
+];
+
+let stressRunning = false;
+
+async function runStressTest() {
+  if (stressRunning) return;
+  stressRunning = true;
+
+  // Reset session first
+  if (sessionId) {
+    await fetch(`${API_BASE}/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {});
+    sessionId = null;
+  }
+  document.getElementById('messagesContainer').innerHTML = '';
+
+  const btn = document.getElementById('stressBtn');
+  btn.disabled = true;
+  btn.textContent = 'Идёт тест...';
+
+  for (let i = 0; i < STRESS_WAVES.length; i++) {
+    const wave = STRESS_WAVES[i];
+
+    // Add wave label
+    const container = document.getElementById('messagesContainer');
+    const label = document.createElement('div');
+    label.className = 'stress-progress';
+    label.textContent = `── ${wave.label} ──`;
+    container.appendChild(label);
+    scrollToBottom();
+
+    // Send and wait for completion
+    await sendMessageAsync(wave.message);
+
+    // Wait between waves
+    if (i < STRESS_WAVES.length - 1) {
+      await sleep(1500);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Стресс-тест';
+  stressRunning = false;
+}
+
+function sendMessageAsync(text) {
+  return new Promise((resolve) => {
+    const welcome = document.getElementById('welcomeScreen');
+    if (welcome) welcome.remove();
+
+    addMessage('user', text);
+    showTyping(true);
+    animatePipeline();
+
+    const params = new URLSearchParams({ message: text });
+    if (sessionId) params.append('session_id', sessionId);
+
+    const eventSource = new EventSource(`${API_BASE}/api/chat/stream?${params}`);
+    let bubbleEl = null;
+    let fullText = '';
+    let classification = null;
+
+    eventSource.addEventListener('meta', (e) => {
+      const meta = JSON.parse(e.data);
+      sessionId = meta.session_id;
+      classification = meta.classification;
+      updateScenario(meta.scenario);
+      if (meta.calc) showCalcCard(meta.calc);
+      showTyping(false);
+      const result = createMessageShell('assistant', classification);
+      bubbleEl = result.bubble;
+    });
+
+    eventSource.addEventListener('message', (e) => {
+      if (!bubbleEl) {
+        const result = createMessageShell('assistant', classification);
+        bubbleEl = result.bubble;
+        showTyping(false);
+      }
+      fullText += e.data;
+      bubbleEl.textContent = fullText;
+      scrollToBottom();
+    });
+
+    eventSource.addEventListener('done', () => {
+      eventSource.close();
+      resetPipeline();
+      fetchState();
+      resolve();
+    });
+
+    eventSource.addEventListener('error', () => {
+      eventSource.close();
+      if (!fullText) {
+        showTyping(false);
+        addMessage('assistant', 'Ошибка соединения.', 'error');
+      }
+      resetPipeline();
+      fetchState();
+      resolve();
+    });
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // --- Reset session ---
 function resetSession() {
@@ -913,28 +1217,26 @@ function resetSession() {
     fetch(`${API_BASE}/api/sessions/${sessionId}`, { method: 'DELETE' }).catch(() => {});
   }
   sessionId = null;
-  messageCount = 0;
-  document.getElementById('messagesContainer').innerHTML = '';
-  document.getElementById('confidenceValue').textContent = '85%';
-  document.getElementById('pressureValue').textContent = '0';
-  document.getElementById('messagesValue').textContent = '0';
-  document.getElementById('factsValue').textContent = '0';
-  document.getElementById('factsList').innerHTML = '<div class="fact-item" style="color: var(--text-dim); font-style: italic;">Пока нет новых фактов</div>';
-  updateScenario('B');
-
-  // Re-add welcome
   location.reload();
 }
 
 // --- Export ---
 function exportChat() {
-  const messages = document.querySelectorAll('.message');
+  const items = document.querySelectorAll('.message, .calc-card, .stress-progress');
   let text = 'CAITO Assistant — BigTechGroup\nAI South Hack 2026\n' + '='.repeat(40) + '\n\n';
-  messages.forEach(msg => {
-    const role = msg.classList.contains('user') ? 'Вы' : 'CAITO';
-    const bubble = msg.querySelector('.message-bubble');
-    if (bubble) {
-      text += `[${role}]: ${bubble.textContent}\n\n`;
+  items.forEach(el => {
+    if (el.classList.contains('stress-progress')) {
+      text += `\n${el.textContent}\n\n`;
+    } else if (el.classList.contains('calc-card')) {
+      text += `[КАЛЬКУЛЯТОР]\n${el.textContent.trim()}\n\n`;
+    } else {
+      const role = el.classList.contains('user') ? 'Вы' : 'CAITO';
+      const bubble = el.querySelector('.message-bubble');
+      const tag = el.querySelector('.cls-tag');
+      if (bubble) {
+        const tagText = tag ? ` [${tag.textContent}]` : '';
+        text += `[${role}]${tagText}: ${bubble.textContent}\n\n`;
+      }
     }
   });
   const blob = new Blob([text], { type: 'text/plain' });
@@ -946,7 +1248,6 @@ function exportChat() {
   URL.revokeObjectURL(url);
 }
 
-// Focus on load
 input.focus();
 </script>
 
