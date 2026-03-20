@@ -4,6 +4,7 @@ AI South Hack 2026
 Architecture: Classifier → Calculator → State Machine → Persona → LLM
 """
 
+import json
 import os
 import time
 import uuid
@@ -29,8 +30,31 @@ from persona import build_system_prompt
 load_dotenv()
 
 # --- Config ---
-API_KEY = os.getenv("GROQ_API_KEY", "")
-MODEL = os.getenv("MODEL", "llama-3.3-70b-versatile")
+# Мульти-провайдер: пробуем по порядку, первый рабочий побеждает
+LLM_PROVIDERS = []
+
+# OpenRouter (primary)
+_or_key = os.getenv("OPENROUTER_API_KEY", "")
+if _or_key:
+    LLM_PROVIDERS.append({
+        "name": "OpenRouter",
+        "api_key": _or_key,
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free"),
+    })
+
+# Groq (fallback)
+_groq_key = os.getenv("GROQ_API_KEY", "")
+if _groq_key:
+    LLM_PROVIDERS.append({
+        "name": "Groq",
+        "api_key": _groq_key,
+        "base_url": "https://api.groq.com/openai/v1",
+        "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+    })
+
+MODEL = os.getenv("MODEL", LLM_PROVIDERS[0]["model"] if LLM_PROVIDERS else "")
+API_BASE_URL = os.getenv("API_BASE_URL", "")
 PORT = int(os.getenv("PORT", "8000"))
 MAX_HISTORY = 20
 SESSION_TTL = 3600  # 1 час
@@ -109,7 +133,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = OpenAI(api_key=API_KEY, base_url="https://api.groq.com/openai/v1")
+# Создаём клиенты для всех провайдеров
+llm_clients = []
+for provider in LLM_PROVIDERS:
+    llm_clients.append({
+        "name": provider["name"],
+        "model": provider["model"],
+        "client": OpenAI(api_key=provider["api_key"], base_url=provider["base_url"]),
+    })
 
 # --- Static files ---
 STATIC_DIR = Path(__file__).parent / "static"
@@ -195,27 +226,34 @@ async def _generate_response(message: str, session_id: Optional[str] = None) -> 
 
     messages = [{"role": "system", "content": system_prompt}] + trimmed
 
-    try:
-        response = client.chat.completions.create(
-            model=MODEL,
-            max_tokens=512,
-            messages=messages,
-            temperature=0.3,
-        )
-        assistant_text = response.choices[0].message.content
+    # Пробуем провайдеров по порядку
+    last_error = None
+    for llm in llm_clients:
+        try:
+            response = llm["client"].chat.completions.create(
+                model=llm["model"],
+                max_tokens=512,
+                messages=messages,
+                temperature=0.3,
+            )
+            assistant_text = response.choices[0].message.content
 
-        session.messages.append({"role": "assistant", "content": assistant_text})
-        session.messages = trim_history(session.messages)
+            session.messages.append({"role": "assistant", "content": assistant_text})
+            session.messages = trim_history(session.messages)
 
-        return assistant_text, sid, session.state.current_scenario, classification.category
+            return assistant_text, sid, session.state.current_scenario, classification.category
 
-    except (APIError, Exception) as e:
-        if session.messages and session.messages[-1]["role"] == "user":
-            session.messages.pop()
-        # Fallback — отвечаем без LLM
-        fallback = _get_fallback_response(classification.category, session.state)
-        session.messages.append({"role": "assistant", "content": fallback})
-        return fallback, sid, session.state.current_scenario, classification.category
+        except Exception as e:
+            last_error = e
+            print(f"⚠ {llm['name']} failed: {e}, trying next...")
+            continue
+
+    # Все провайдеры упали — fallback
+    if session.messages and session.messages[-1]["role"] == "user":
+        session.messages.pop()
+    fallback = _get_fallback_response(classification.category, session.state)
+    session.messages.append({"role": "assistant", "content": fallback})
+    return fallback, sid, session.state.current_scenario, classification.category
 
 
 FALLBACK_RESPONSES = {
@@ -268,7 +306,6 @@ async def chat_stream(message: str, session_id: Optional[str] = None):
     system_prompt, classification, calc_result = run_pipeline(message.strip(), session)
 
     # Формируем данные калькулятора для UI
-    import json
     calc_data = None
     if calc_result:
         calc_data = {
@@ -301,29 +338,41 @@ async def chat_stream(message: str, session_id: Optional[str] = None):
         yield {"event": "meta", "data": json.dumps(meta, ensure_ascii=False)}
 
         full_response = ""
-        try:
-            stream = client.chat.completions.create(
-                model=MODEL,
-                max_tokens=512,
-                messages=messages,
-                temperature=0.3,
-                stream=True,
-            )
-            for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    text = chunk.choices[0].delta.content
-                    full_response += text
-                    yield {"event": "message", "data": text}
+        succeeded = False
 
-            session.messages.append({"role": "assistant", "content": full_response})
-            session.messages = trim_history(session.messages)
+        # Пробуем провайдеров по порядку
+        for llm in llm_clients:
+            try:
+                stream = llm["client"].chat.completions.create(
+                    model=llm["model"],
+                    max_tokens=512,
+                    messages=messages,
+                    temperature=0.3,
+                    stream=True,
+                )
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        text = chunk.choices[0].delta.content
+                        full_response += text
+                        yield {"event": "message", "data": text}
 
-            yield {"event": "done", "data": ""}
+                session.messages.append({"role": "assistant", "content": full_response})
+                session.messages = trim_history(session.messages)
+                succeeded = True
+                break  # успех — выходим
 
-        except Exception as e:
+            except Exception as e:
+                print(f"⚠ Stream {llm['name']} failed: {e}, trying next...")
+                continue
+
+        if not succeeded:
+            # Все провайдеры упали — fallback
             if session.messages and session.messages[-1]["role"] == "user":
                 session.messages.pop()
-            yield {"event": "error", "data": str(e)}
+            fallback = _get_fallback_response(classification.category, session.state)
+            yield {"event": "message", "data": fallback}
+
+        yield {"event": "done", "data": ""}
 
     return EventSourceResponse(event_generator())
 
